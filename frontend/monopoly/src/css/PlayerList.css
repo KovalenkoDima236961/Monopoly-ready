@@ -1,0 +1,13 @@
+.player-list {
+    display: flex;
+    flex-direction: column;
+    margin-right: 20px;
+}
+
+.player {
+    background-color: #f9f9f9;
+    padding: 10px;
+    margin-bottom: 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}

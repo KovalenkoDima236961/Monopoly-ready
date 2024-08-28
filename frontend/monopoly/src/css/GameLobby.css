@@ -1,0 +1,85 @@
+.game-lobby {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin: 20px;
+    width: 100%;
+    background-color: #f7f7f7;
+    padding: 20px;
+    border-radius: 8px;
+}
+
+.game-header {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.game-name {
+    font-size: 24px;
+    font-weight: bold;
+    color: #e74c3c;
+}
+
+.player-slots {
+    display: flex;
+    gap: 10px;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    width: 100%;
+}
+
+.player-slot {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 120px;
+    height: 120px;
+    background-color: #fff;
+    border-radius: 8px;
+    border: 2px solid #ddd;
+    box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+}
+
+.player-slot.filled {
+    background-color: #e9ecef;
+}
+
+.player-slot.empty {
+    background-color: #f8f9fa;
+    border-style: dashed;
+    color: #aaa;
+}
+
+.player-avatar {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    margin-bottom: 10px;
+}
+
+.player-username {
+    font-size: 16px;
+    color: #333;
+    margin-bottom: 10px;
+}
+
+.join-button,
+.leave-button {
+    padding: 5px 10px;
+    background-color: #3498db;
+    color: white;
+    border: none;
+    cursor: pointer;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+.join-button:hover,
+.leave-button:hover {
+    background-color: #2980b9;
+}

@@ -1,0 +1,22 @@
+.modal-body .form-group {
+    margin-bottom: 15px;
+}
+
+.players-select button {
+    margin-right: 5px;
+    margin-bottom: 10px;
+}
+
+.vip-settings {
+    background-color: #f8d7da;
+    padding: 10px;
+    border-radius: 5px;
+    margin-top: 20px;
+    text-align: center;
+}
+
+.create-room-button {
+    display: block;
+    width: 100%;
+    margin-top: 20px;
+}

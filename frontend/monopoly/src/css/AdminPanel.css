@@ -1,0 +1,26 @@
+.admin-panel {
+    display: flex;
+    min-height: 100vh;
+    position: relative;
+}
+
+.admin-content {
+    padding: 80px 20px 20px; /* Adjust padding to ensure content is not hidden under the navbar */
+    background: #f1f5f8;
+    flex: 1;
+    transition: margin-left 0.3s ease-in-out;
+    margin: 0;
+}
+
+.sidebar-toggle {
+    position: absolute; /* Ensure the button is positioned relative to the page */
+    top: 1rem; /* Distance from the top */
+    left: 1rem; /* Distance from the left */
+    background: var(--clr-primary-5); /* Keep the color as it was */
+    color: var(--clr-white);
+    border: none;
+    padding: 0.5rem 1rem; /* Define padding to prevent the button from being too large */
+    cursor: pointer;
+    border-radius: 5px;
+    z-index: 1000; /* Ensure it appears above other elements */
+}
