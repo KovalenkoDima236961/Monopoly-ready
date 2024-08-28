@@ -1,0 +1,47 @@
+.tile {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid black;
+    width: 50px; /* Default width for other tiles */
+    height: 100px; /* Default height for other tiles */
+    text-align: center;
+    margin: 0; /* Прибрати відступи між плитками */
+    box-sizing: border-box; /* Враховувати обведення в розмірах */
+}
+
+.tile.corner {
+    /* background-color: yellow; */
+    width: 100px; /* Make corner tiles wider */
+    height: 100px; /* Default height for corner tiles */
+}
+
+.tile.corner.go {
+    width: 100px; /* Wider Go tile */
+    height: 100px; /* Keep the height the same */
+}
+
+.tile.go-to-jail {
+    width: 50px; /* Keep the width the same */
+    height: 100px; /* Make the 'Go to Jail' tile longer */
+}
+
+.tile.property {
+    background-color: lightgreen;
+}
+
+.tile.chance {
+    background-color: lightcoral;
+}
+
+.tile.utility {
+    background-color: lightblue;
+}
+
+.tile.cars {
+    background-color: lightgoldenrodyellow;
+}
+
+.tile.clothing {
+    background-color: lightpink;
+}
