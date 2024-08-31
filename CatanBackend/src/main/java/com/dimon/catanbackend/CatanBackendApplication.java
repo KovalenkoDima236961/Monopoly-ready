@@ -4,11 +4,9 @@ import io.github.cdimascio.dotenv.Dotenv;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
-// TODO WRITE DOCKER FILE
-// TODO CHECK HOW WORK PRISON
-// TODO FIX OFFICE
-// TODO CHECK IF WORK AUCTION
-// TODO Merge again Full-Web-Monopoly-without-Backend
+// Write Readme file
+// Add Aspect
+// Check if redis work
 @SpringBootApplication
 public class CatanBackendApplication {
 

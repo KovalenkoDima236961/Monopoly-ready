@@ -15,6 +15,7 @@ import com.dimon.catanbackend.utils.Convertor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -48,37 +49,27 @@ public class GameService {
     @Autowired
     private SimpMessagingTemplate messagingTemplate;
 
+    @Autowired
+    private RedisTemplate<String, Object> redisTemplate;
+
+    private static final String PREFIX = "game_state:";
+
     public Game findGameById(String gameId) {
         return gameRepository.findById(gameId).orElseThrow(() -> new GameNotFoundException("Game not found with id: "+ gameId));
     }
 
-    @Transactional
+
     public void saveGameState(String gameId, String state) {
         Game game = gameRepository.findById(gameId)
                 .orElseThrow(() -> new GameNotFoundException("Game not found with id: " + gameId));
 
-        // Check if a GameState already exists
-        Optional<GameState> existingState = gameStateRepository.findByGame(game);
-
-        GameState gameState;
-        if (existingState.isPresent()) {
-            // Update the existing GameState
-            gameState = existingState.get();
-        } else {
-            // Create a new GameState
-            gameState = new GameState();
-            gameState.setGame(game);
-        }
-
-        gameState.setState(state);
-        gameStateRepository.save(gameState);
+        GameState gameState = new GameState(gameId, state, game);
+        redisTemplate.opsForValue().set(PREFIX + gameId, gameState);
     }
 
-    @Transactional(readOnly = true)
     public String getGameState(String gameId) {
-        return gameStateRepository.findByGameId(gameId)
-                .map(GameState::getState)
-                .orElse(null);
+        GameState gameState = (GameState) redisTemplate.opsForValue().get(PREFIX + gameId);
+        return (gameState != null) ? gameState.getState() : null;
     }
 
     @Transactional
