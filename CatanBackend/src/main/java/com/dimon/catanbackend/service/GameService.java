@@ -24,7 +24,63 @@ import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
-
+/**
+ * Service class responsible for managing the lifecycle of games, including creating, joining,
+ * leaving, and observing games. It also handles saving and retrieving game state, managing turns,
+ * and managing players and properties in the context of the game.
+ *
+ * The service interacts with several repositories such as {@link GameRepository}, {@link GameStateRepository},
+ * {@link PlayerRepository}, and {@link UserRepository}. Additionally, it utilizes the
+ * {@link SimpMessagingTemplate} to send updates to game clients in real-time.
+ *
+ * Annotations used:
+ * - {@link Service} to mark this as a Spring service component.
+ * - {@link Transactional} to ensure operations are handled in a transactional context where needed.
+ * - {@link Autowired} to inject dependencies.
+ *
+ * Methods:
+ * - {@code findGameById}: Finds a game by its ID.
+ * - {@code saveGameState}: Saves the current game state to Redis.
+ * - {@code getGameState}: Retrieves the saved game state from Redis.
+ * - {@code createGame}: Creates a new game and adds the first player (game creator).
+ * - {@code leaveGame}: Allows a player to leave a game.
+ * - {@code joinGame}: Allows a player to join an existing game.
+ * - {@code endTurn}: Ends the current player's turn and switches to the next player.
+ * - {@code getGames}: Retrieves a list of all games.
+ * - {@code findAllGames}: Finds all available games that have not started yet.
+ * - {@code getPropertyOwner}: Retrieves the owner of a property by game and property name.
+ * - {@code deleteGameById}: Deletes a game and its associated players and properties.
+ * - {@code addObserverToGame}: Adds an observer to a game.
+ *
+ * Messaging:
+ * - Uses {@link SimpMessagingTemplate} to send real-time updates to game clients via WebSocket.
+ *
+ * Exceptions:
+ * - {@link GameNotFoundException} if the game is not found.
+ * - {@link PlayerNotFoundException} if the player is not found.
+ * - {@link UserNotFoundException} if the user is not found.
+ * - {@link InvalidActionException} if an invalid action is attempted (e.g., joining a game twice).
+ *
+ * Helper utilities:
+ * - {@link CompressionUtils} for handling data compression in the game state.
+ * - {@link Convertor} for converting entity objects (e.g., {@link Player}) to DTOs.
+ *
+ * Caching:
+ * - Uses {@link RedisTemplate} to cache game state information for fast retrieval.
+ *
+ * @see Game
+ * @see Player
+ * @see Property
+ * @see User
+ * @see SimpMessagingTemplate
+ * @see GameRepository
+ * @see PlayerRepository
+ * @see GameStateRepository
+ * @see RedisTemplate
+ * @see Convertor
+ * @see CompressionUtils
+ *
+ */
 @Service
 public class GameService {
     private static final Logger logger = LoggerFactory.getLogger(GameService.class);
@@ -54,11 +110,23 @@ public class GameService {
 
     private static final String PREFIX = "game_state:";
 
+    /**
+     * Finds a game by its ID.
+     *
+     * @param gameId the ID of the game to find
+     * @return the game found
+     * @throws GameNotFoundException if the game is not found
+     */
     public Game findGameById(String gameId) {
         return gameRepository.findById(gameId).orElseThrow(() -> new GameNotFoundException("Game not found with id: "+ gameId));
     }
 
-
+    /**
+     * Saves the current state of the game to Redis.
+     *
+     * @param gameId the ID of the game
+     * @param state the game state as a string
+     */
     public void saveGameState(String gameId, String state) {
         Game game = gameRepository.findById(gameId)
                 .orElseThrow(() -> new GameNotFoundException("Game not found with id: " + gameId));
@@ -67,11 +135,24 @@ public class GameService {
         redisTemplate.opsForValue().set(PREFIX + gameId, gameState);
     }
 
+    /**
+     * Retrieves the saved state of the game from Redis.
+     *
+     * @param gameId the ID of the game
+     * @return the saved game state as a string, or null if not found
+     */
     public String getGameState(String gameId) {
         GameState gameState = (GameState) redisTemplate.opsForValue().get(PREFIX + gameId);
         return (gameState != null) ? gameState.getState() : null;
     }
 
+    /**
+     * Creates a new game with the specified parameters and adds the first player (the creator) to the game.
+     *
+     * @param message a map containing game details (gameName, username, maxPlayers)
+     * @return the created game
+     * @throws RuntimeException if an error occurs during game creation
+     */
     @Transactional
     public Game createGame(Map<String, String> message) {
         try {
@@ -130,6 +211,14 @@ public class GameService {
         }
     }
 
+    /**
+     * Allows a player to leave the game. If all players leave, the game is deleted.
+     *
+     * @param gameId the ID of the game
+     * @param message a map containing the username of the player leaving the game
+     * @return the updated game state after the player leaves
+     * @throws RuntimeException if the player cannot be deleted
+     */
     //TODO Now game set to null, but it doesn't delete player from db
     @Transactional
     public Game leaveGame(String gameId, Map<String, String> message) {
@@ -192,7 +281,15 @@ public class GameService {
         }
         return game;
     }
-    //TODO Doesn't work properly when i started game
+
+    /**
+     * Allows a player to join an existing game if they are not already in the game.
+     *
+     * @param gameId the ID of the game to join
+     * @param message a map containing the username and game details
+     * @return the updated game state after the player joins
+     * @throws RuntimeException if an error occurs during the join process
+     */
     @Transactional
     public Game joinGame(String gameId, Map<String, String> message) {
         try {
@@ -262,6 +359,11 @@ public class GameService {
         }
     }
 
+    /**
+     * Ends the current player's turn and switches to the next player in the game.
+     *
+     * @param message a map containing the gameId and gameName
+     */
     public void endTurn(Map<String, String> message) {
         String gameId = message.get("gameId");
         String gameName = message.get("gameName");
@@ -305,6 +407,11 @@ public class GameService {
         }
     }
 
+    /**
+     * Retrieves a list of all active games in the system.
+     *
+     * @return a list of maps containing game details (id and name)
+     */
     public List<Map<String, String>> getGames() {
         List<Game> games = gameRepository.findAll();
         if (games.isEmpty()) {
@@ -315,6 +422,11 @@ public class GameService {
                 .collect(Collectors.toList());
     }
 
+    /**
+     * Retrieves all available games that have not yet started.
+     *
+     * @return a list of games that have not started
+     */
     public List<Game> findAllGames() {
         return gameRepository.findAll()
                 .stream()
@@ -322,6 +434,13 @@ public class GameService {
                 .collect(Collectors.toList());
     }
 
+    /**
+     * Retrieves the owner of a property by game ID and property name.
+     *
+     * @param gameId the ID of the game
+     * @param propertyName the name of the property
+     * @return an {@link Optional} containing the owner as a {@link PlayerDTO}, or empty if no owner found
+     */
     public Optional<PlayerDTO> getPropertyOwner(String gameId, String propertyName) {
         Game game = gameRepository.findById(gameId).orElseThrow(() -> new RuntimeException("Game not found"));
         Optional<Property> property = propertyService.findByGameIdAndPropertyName(gameId, propertyName);
@@ -334,6 +453,11 @@ public class GameService {
         return Optional.empty();
     }
 
+    /**
+     * Deletes a game and all its associated players and properties by game ID.
+     *
+     * @param gameId the ID of the game to delete
+     */
     @Transactional
     public void deleteGameById(String gameId) {
         Game game = gameRepository.findById(gameId)
@@ -350,6 +474,12 @@ public class GameService {
         gameRepository.delete(game);
     }
 
+    /**
+     * Adds an observer (spectator) to a game, allowing them to watch the game.
+     *
+     * @param gameId the ID of the game
+     * @param userId the ID of the user who wants to observe
+     */
     @Transactional
     public void addObserverToGame(String gameId, Long userId) {
         Game game = gameRepository.findById(gameId)

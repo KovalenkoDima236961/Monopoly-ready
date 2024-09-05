@@ -19,6 +19,49 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
+/**
+ * Service class responsible for handling business logic related to {@link Player} entities
+ * in the context of the game. This class provides functionality for managing player movements,
+ * buying properties, paying rent, handling property mortgages, and various game-related operations
+ * like playing a casino game and surrendering.
+ *
+ * The service interacts with the {@link GameRepository}, {@link PlayerRepository}, and {@link PropertyRepository}
+ * to perform CRUD operations on the related entities. It also utilizes {@link SimpMessagingTemplate}
+ * to send real-time game updates to subscribed clients.
+ *
+ * Annotations used:
+ * - {@link Service} to mark this as a Spring service component.
+ * - {@link Transactional} to ensure the operations are handled in a transactional context.
+ * - {@link Autowired} to inject the necessary dependencies.
+ *
+ * Methods:
+ * - {@code movePlayer}: Handles player movement on the game board.
+ * - {@code payRent}: Allows a player to pay rent to the property owner.
+ * - {@code buyProperty}: Allows a player to purchase a property.
+ * - {@code buyOffice}: Allows a player to buy offices for a property.
+ * - {@code sellOffice}: Allows a player to sell offices from a property.
+ * - {@code mortgageProperty}: Allows a player to mortgage a property.
+ * - {@code unmortgageProperty}: Allows a player to unmortgage a property.
+ * - {@code surrender}: Allows a player to surrender and remove themselves from the game.
+ * - {@code playCasinoGame}: Simulates a casino game within the game.
+ * - {@code payMoney}: Handles direct money transfers between players or entities.
+ *
+ * Helper methods:
+ * - {@code checkAndApplyCategoryBonus}: Checks if a player owns all properties in a category and applies a rent bonus.
+ * - {@code determineRent}: Determines the rent for a property based on its base rent and number of offices.
+ * - {@code moveToJail}: Moves a player to jail when they land on the corresponding field.
+ *
+ * Exceptions thrown:
+ * - {@link GameNotFoundException} if the game is not found.
+ * - {@link PlayerNotFoundException} if the player is not found.
+ * - {@link PropertyNotFoundException} if the property is not found.
+ * - {@link InvalidActionException} if an invalid action is attempted (e.g., buying a non-purchasable property).
+ * - {@link InsufficientFundsException} if a player does not have enough money to perform an action.
+ *
+ * Messaging:
+ * - Uses {@link SimpMessagingTemplate} to send real-time updates to game clients via WebSocket.
+ *
+ */
 @Service
 public class PlayerService {
     @Autowired
@@ -33,6 +76,14 @@ public class PlayerService {
     @Autowired
     private SimpMessagingTemplate messagingTemplate;
 
+    /**
+     * Moves a player to a new position on the game board, updates their position, and checks if they landed on
+     * a property that requires rent payment. Sends an update to the game clients via WebSocket.
+     *
+     * @param message the message containing gameId, username, newPosition, coordinates, and other relevant data
+     * @throws GameNotFoundException if the game is not found
+     * @throws PlayerNotFoundException if the player is not found
+     */
     @Transactional
     public void movePlayer(Map<String, Object> message) {
         String gameId = (String) message.get("gameId");
@@ -105,6 +156,13 @@ public class PlayerService {
         messagingTemplate.convertAndSend("/topic/game/" + gameId, res);
     }
 
+    /**
+     * Handles the payment of rent by a player to the owner of the property they landed on.
+     *
+     * @param message the message containing gameId, username, and rent amount
+     * @throws PlayerNotFoundException if the player is not found
+     * @throws PropertyNotFoundException if the property is not found
+     */
     // TODO HERE PROBLEM WITH SQL
     @Transactional
     public void payRent(Map<String, Object> message) {
@@ -145,6 +203,15 @@ public class PlayerService {
         return false;
     }
 
+    /**
+     * Allows a player to buy a property if they have enough money. Updates the property owner and the player's balance.
+     *
+     * @param message the message containing gameId, username, and property details
+     * @throws PlayerNotFoundException if the player is not found
+     * @throws PropertyNotFoundException if the property is not found
+     * @throws InsufficientFundsException if the player doesn't have enough money
+     * @throws InvalidActionException if the property cannot be bought
+     */
     @Transactional
     public void buyProperty(Map<String, String> message) {
         String gameId = message.get("gameId");
@@ -252,6 +319,16 @@ public class PlayerService {
             moveToJail(gameId, username, gameName);
         }
     }
+
+    /**
+     * Allows a player to buy an office for a property, increasing its rent value.
+     *
+     * @param message the message containing gameId, username, and property details
+     * @throws PlayerNotFoundException if the player is not found
+     * @throws PropertyNotFoundException if the property is not found
+     * @throws InvalidActionException if the player cannot buy an office for this property
+     * @throws InsufficientFundsException if the player doesn't have enough money
+     */
     @Transactional
     public void buyOffice(Map<String, String> message) {
         String gameId = message.get("gameId");
@@ -297,6 +374,15 @@ public class PlayerService {
 
         messagingTemplate.convertAndSend("/topic/game/" + game.getId(), response);
     }
+
+    /**
+     * Allows a player to sell an office from a property, reducing its rent value.
+     *
+     * @param message the message containing gameId, username, and property details
+     * @throws PlayerNotFoundException if the player is not found
+     * @throws PropertyNotFoundException if the property is not found
+     * @throws InvalidActionException if no offices are available to sell
+     */
     @Transactional
     public void sellOffice(Map<String, String> message) {
         String gameId = message.get("gameId");
@@ -335,6 +421,15 @@ public class PlayerService {
             throw new InvalidActionException("No offices to sell");
         }
     }
+
+    /**
+     * Allows a player to mortgage a property, providing immediate cash but reducing its rent to zero.
+     *
+     * @param message the message containing gameId, username, and property details
+     * @throws PlayerNotFoundException if the player is not found
+     * @throws PropertyNotFoundException if the property is not found
+     * @throws InvalidActionException if the property cannot be mortgaged
+     */
     @Transactional
     public void mortgageProperty(Map<String, String> message) {
         String gameId = message.get("gameId");
@@ -412,7 +507,15 @@ public class PlayerService {
     }
 
 
-
+    /**
+     * Allows a player to unmortgage a property, restoring its rent value in exchange for a fee.
+     *
+     * @param message the message containing gameId, username, and property details
+     * @throws PlayerNotFoundException if the player is not found
+     * @throws PropertyNotFoundException if the property is not found
+     * @throws InsufficientFundsException if the player doesn't have enough money to unmortgage the property
+     * @throws InvalidActionException if the property is not mortgaged
+     */
     @Transactional
     public void unmortgageProperty(Map<String, String> message) {
         String gameId = message.get("gameId");
@@ -457,6 +560,14 @@ public class PlayerService {
             throw new InvalidActionException("Property is not mortgaged");
         }
     }
+
+    /**
+     * Handles the action of a player surrendering, removing them from the game and transferring ownership of their properties back to the bank.
+     *
+     * @param message the message containing gameId and username
+     * @throws GameNotFoundException if the game is not found
+     * @throws PlayerNotFoundException if the player is not found
+     */
     @Transactional
     public void surrender(Map<String, String> message) {
         String gameId = message.get("gameId");
@@ -493,6 +604,15 @@ public class PlayerService {
         messagingTemplate.convertAndSend("/topic/game/" + game.getId(), response);
     }
 
+
+    /**
+     * Moves the player to jail if they land on the "Prison" field.
+     *
+     * @param gameId the ID of the game
+     * @param username the username of the player
+     * @param gameName the name of the game
+     * @throws PlayerNotFoundException if the player is not found
+     */
     private void moveToJail(String gameId, String username, String gameName) {
         Player player = playerRepository.findByUsernameAndGameId(username, gameId)
                 .orElseThrow(() -> new PlayerNotFoundException("Player not found with username: " + username));
@@ -508,6 +628,14 @@ public class PlayerService {
 
         messagingTemplate.convertAndSend("/topic/game/" + gameId, response);
     }
+
+    /**
+     * Simulates a casino game where a player bets on a number and wins based on the outcome of a random roll.
+     *
+     * @param message the message containing gameId, username, bet amount, and selected numbers
+     * @throws GameNotFoundException if the game is not found
+     * @throws PlayerNotFoundException if the player is not found
+     */
     @Transactional
     public void playCasinoGame(Map<String, Object> message) {
         String gameId = (String) message.get("gameId");
@@ -561,6 +689,12 @@ public class PlayerService {
         messagingTemplate.convertAndSend("/topic/game/" + game.getId(), response);
     }
 
+    /**
+     * Determines the rent to be paid for a given property based on its base rent and the number of offices.
+     *
+     * @param property the property for which rent is being determined
+     * @return the calculated rent
+     */
     private int determineRent(Property property) {
         int baseRent = property.getBaseRent();
 

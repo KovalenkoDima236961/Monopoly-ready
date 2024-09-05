@@ -24,7 +24,52 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.util.Optional;
 import java.util.UUID;
-
+/**
+ * Service class responsible for handling user authentication and registration, as well as account activation
+ * via email verification. It interacts with the {@link UserService}, {@link JwtTokenUtils}, {@link AuthenticationManager},
+ * {@link EmailSenderService}, and {@link FileStorageService} to perform these operations.
+ *
+ * Annotations used:
+ * - {@link Service} to mark this class as a Spring service component.
+ * - {@link RequiredArgsConstructor} to automatically generate a constructor for final fields.
+ *
+ * Methods:
+ * - {@code createAuthToken}: Authenticates a user using their email and password, and generates a JWT token.
+ * - {@code createNewUser}: Registers a new user, saves their profile photo, and sends an email for account activation.
+ * - {@code activateAccount}: Activates a user's account based on a valid activation token.
+ *
+ * Messaging:
+ * - Sends account activation emails via the {@link EmailSenderService}.
+ *
+ * Exception handling:
+ * - Throws {@link BadCredentialsException} for incorrect login credentials.
+ * - Throws {@link EmailAlreadyInUseException} if the email is already registered.
+ * - Throws {@link InvalidTokenException} if the activation token is invalid.
+ * - Returns a {@link ResponseEntity} with appropriate HTTP status codes for errors (e.g., 401 for unauthorized, 400 for bad requests).
+ *
+ * Example usage:
+ * <pre>
+ * {@code
+ * authService.createAuthToken(jwtRequest);  // Authenticate and generate JWT
+ * authService.createNewUser(userDto);       // Register new user and send activation email
+ * authService.activateAccount(token);       // Activate user account with token
+ * }
+ * </pre>
+ *
+ * @see UserService
+ * @see JwtTokenUtils
+ * @see AuthenticationManager
+ * @see EmailSenderService
+ * @see FileStorageService
+ * @see JwtRequest
+ * @see JwtResponse
+ * @see RegistrationUserDto
+ * @see UserDto
+ * @see AppError
+ * @see EmailAlreadyInUseException
+ * @see InvalidTokenException
+ *
+ */
 @Service
 @RequiredArgsConstructor
 public class AuthService {
@@ -34,6 +79,12 @@ public class AuthService {
     private final EmailSenderService emailSenderService;
     private final FileStorageService fileStorageService;
 
+    /**
+     * Authenticates a user based on their email and password, and generates a JWT token if successful.
+     *
+     * @param authRequest the login request containing email and password
+     * @return a {@link ResponseEntity} containing the generated JWT token or an error message
+     */
     public ResponseEntity<?> createAuthToken(JwtRequest authRequest) {
         try {
             authenticationManager.authenticate(
@@ -55,6 +106,13 @@ public class AuthService {
         return ResponseEntity.ok(new JwtResponse(token));
     }
 
+    /**
+     * Registers a new user, saves their profile photo, sends an account activation email, and
+     * returns the user's details.
+     *
+     * @param userDto the DTO containing registration details (username, email, password, etc.)
+     * @return a {@link ResponseEntity} with the user's details or an error message
+     */
     public ResponseEntity<?> createNewUser(@RequestBody RegistrationUserDto userDto) {
         if (!userDto.getPassword().equals(userDto.getRe_password())) {
             return new ResponseEntity<>(new AppError(HttpStatus.BAD_REQUEST.value(), "Passwords do not match"), HttpStatus.BAD_REQUEST);
@@ -112,6 +170,14 @@ public class AuthService {
         return ResponseEntity.ok(new UserDto(user.getId(), user.getUsername(), user.getEmail()));
     }
 
+    /**
+     * Activates a user's account based on the activation token provided, making the user active and
+     * removing the token.
+     *
+     * @param token the activation token sent to the user
+     * @return a {@link ResponseEntity} indicating successful activation or an error message
+     * @throws InvalidTokenException if the token is invalid or not found
+     */
     public ResponseEntity<?> activateAccount(String token) {
         System.out.println("Token: "+ token);
         Optional<User> userOptional = userService.findByActivationToken(token);

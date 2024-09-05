@@ -10,12 +10,37 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+/**
+ * Service class responsible for handling business logic related to {@link Property} entities
+ * in the context of the game. This class provides functionality for initializing properties
+ * for a game, retrieving specific properties by game ID and property name, and deleting properties.
+ *
+ * The class interacts with the {@link PropertyRepository} for CRUD operations and manages
+ * the property initialization for new games.
+ *
+ * Annotations used:
+ * - {@link Service} to mark this as a Spring service component.
+ * - {@link Autowired} to inject the necessary dependencies.
+ *
+ * Methods:
+ * - {@code initializeProperties}: Initializes the predefined list of properties for a given game.
+ * - {@code findByGameIdAndPropertyName}: Retrieves a property by the game ID and property name.
+ * - {@code delete}: Deletes a specific property.
+ *
+ */
 @Service
 public class PropertyService {
 
     @Autowired
     private PropertyRepository propertyRepository;
 
+    /**
+     * Initializes a list of predefined properties for the given {@link Game}. Each property
+     * is associated with a unique identifier (UUID) and various attributes such as name, price,
+     * and type. The properties are then saved in the repository.
+     *
+     * @param game the game for which the properties are being initialized
+     */
     public void initializeProperties(Game game) {
         List<Property> properties = List.of(
                 new Property(UUID.randomUUID().toString(), "Go", 0, 0, "corner", game, null, 0),
@@ -63,11 +88,22 @@ public class PropertyService {
         propertyRepository.saveAll(properties);
     }
 
+    /**
+     * Retrieves a property by the game ID and the property name.
+     *
+     * @param gameId the unique identifier of the game
+     * @param propertyName the name of the property
+     * @return an {@link Optional} containing the property if found, or empty otherwise
+     */
     public Optional<Property> findByGameIdAndPropertyName(String gameId, String propertyName) {
         return propertyRepository.findByGameIdAndName(gameId, propertyName);
     }
 
-
+    /**
+     * Deletes a specific {@link Property} from the repository.
+     *
+     * @param property the property to be deleted
+     */
     public void delete(Property property) {
         propertyRepository.delete(property);
     }
