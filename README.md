@@ -9,7 +9,7 @@ The project is built using the following technologies:
 - <b>Spring Framework:</b> The backend is developed using the Spring Framework, providing a robust and scalable foundation for the application.
 - <b>PostgreSQL:</b> PostgreSQL is used as the primary database for managing and storing game data.
 - <b>React:</b> The frontend is implemented with React, offering a dynamic and responsive user interface for players.
-- <b>MongoDB or Redis:</b> In the near future, the project will integrate MongoDB or Redis to enhance data handling capabilities.
+- <b>Redis:</b> In the near future, the project will integrate MongoDB or Redis to enhance data handling capabilities.
 
 ## <h2>Project Structure</h2>
 
